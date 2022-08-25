@@ -1,33 +1,25 @@
-import React from 'react'
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect,
-} from 'react-router-dom'
+import { Route, BrowserRouter, Routes } from "react-router-dom";
 
-import { Navbar } from './app/Navbar'
+import { Navbar } from "./app/Navbar";
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Navbar />
       <div className="App">
-        <Switch>
+        <Routes>
           <Route
-            exact
             path="/"
-            render={() => (
+            element={
               <section>
                 <h2>Welcome to the Redux Essentials example app!</h2>
               </section>
-            )}
+            }
           />
-          <Redirect to="/" />
-        </Switch>
+        </Routes>
       </div>
-    </Router>
-  )
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

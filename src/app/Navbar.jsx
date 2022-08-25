@@ -1,5 +1,3 @@
-import React from 'react'
-
 export const Navbar = () => {
   return (
     <nav>
@@ -11,5 +9,5 @@ export const Navbar = () => {
         </div>
       </section>
     </nav>
-  )
-}
+  );
+};
