@@ -1,24 +1,48 @@
-import { createSlice, nanoid } from "@reduxjs/toolkit";
-import { sub } from "date-fns";
+import { createAsyncThunk, createSlice, nanoid } from "@reduxjs/toolkit";
 
-const initialState = [
-  {
-    id: "1",
-    title: "First Post",
-    content: "Hello!",
-    reactions: { thumbsUp: 0, hooray: 2, heart: 0, rocket: 4, eyes: 1 },
-    user: "2",
-    date: sub(new Date(), { minutes: 10 }).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Second Post",
-    content: "More Text",
-    reactions: { thumbsUp: 2, hooray: 1, heart: 0, rocket: 1, eyes: 0 },
-    user: "3",
-    date: sub(new Date(), { minutes: 3 }).toISOString(),
-  },
-];
+const initialState = {
+  posts: [],
+  status: "idle",
+  error: null,
+};
+
+// TODO: Создать thunk на добавление реакции, и обновление постов на сервере.
+
+// createAsyncThunk принимает два аргумента:
+// Первый - строка которая будет отображаться в качестве префикса для сгенерированных
+//  типов действий.
+// Второй - функция обратного вызова "создать полезной нагрузки"
+//  которая должна возвращать Promise содержащий некоторые данные или отклоненный promise
+//  с ошибкой
+
+export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
+  const response = await fetch("http://localhost:3003/posts");
+  const data = await response.json();
+
+  return data;
+});
+
+export const addNewPost = createAsyncThunk(
+  "posts/addNewPost",
+  async (initialPost) => {
+    const response = await fetch("http://localhost:3003/posts", {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+
+      body: JSON.stringify({
+        ...initialPost,
+        date: new Date().toISOString(),
+        reactions: { thumbsUp: 0, hooray: 0, heart: 0, rocket: 0, eyes: 0 },
+      }),
+    });
+
+    const data = await response.json();
+
+    return data;
+  }
+);
 
 export const postsSlice = createSlice({
   name: "posts",
@@ -29,7 +53,7 @@ export const postsSlice = createSlice({
     // но не то и другое одновременно.
     postAdded: {
       reducer: (state, action) => {
-        state.push(action.payload);
+        state.posts.push(action.payload);
       },
       // Функция «подготовить обратный вызов» может принимать несколько аргументов,
       // генерировать случайные значения, такие как уникальные идентификаторы,
@@ -65,7 +89,7 @@ export const postsSlice = createSlice({
       // и поместите в объект действия. Редукторы никогда не должны вычислять
       //  случайные значения , потому что это делает результаты непредсказуемыми.
       const { id, title, content } = action.payload;
-      const existingPost = state.find((post) => post.id === id);
+      const existingPost = state.posts.find((post) => post.id === id);
 
       if (existingPost) {
         existingPost.title = title;
@@ -79,17 +103,46 @@ export const postsSlice = createSlice({
     // действия были как можно меньше, а вычисления обновления состояния выполнялись
     // в редюсере. Это также означает, что редукторы могут содержать столько логики,
     // сколько необходимо для вычисления нового состояния.
+
     reactionAdded: (state, action) => {
       const { postId, reaction } = action.payload;
-      const existingPost = state.find((post) => post.id === postId);
+      const existingPost = state.posts.find((post) => post.id === postId);
 
       if (existingPost) {
         existingPost.reactions[reaction]++;
       }
     },
   },
+  // Опция extraReducersдолжна быть функцией, которая получает параметр с именем builder.
+  // Объект builderпредоставляет методы, которые позволяют нам определять дополнительные
+  // редьюсеры case, которые будут запускаться в ответ на действия, определенные за пределами
+  // слайса. Мы будем использовать builder.addCase(actionCreator, reducer)для обработки
+  // каждого из действий, отправленных нашими асинхронными преобразователями.
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchPosts.pending, (state, action) => {
+        state.status = "loading";
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.posts = state.posts.concat(action.payload);
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message;
+      })
+      .addCase(addNewPost.fulfilled, (state, action) => {
+        state.posts.push(action.payload);
+      });
+  },
 });
 
 export const { postAdded, postUpdated, reactionAdded } = postsSlice.actions;
 
 export default postsSlice.reducer;
+
+// здесь state глобальный со всего стора, а не конкретно из этого среза
+// поэтому такая структура state.posts.posts
+export const selectAllPosts = (state) => state.posts.posts;
+export const selectPostById = (state, postId) =>
+  state.posts.posts.find((post) => post.id === postId);

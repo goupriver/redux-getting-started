@@ -1,6 +1,7 @@
 import { useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import { PostAuthor } from "./PostAuthor";
+import { selectPostById } from "./postsSlice";
 import { ReactionButtons } from "./ReactionButtons";
 import { TimeAgo } from "./TimeAgo";
 
@@ -12,9 +13,7 @@ export const SinglePostPage = () => {
   // Компоненты всегда должны пытаться выбрать из хранилища наименьший возможный
   // объем данных, который им нужен, что поможет гарантировать, что они будут
   // отображаться только тогда, когда это действительно необходимо.
-  const post = useSelector((state) =>
-    state.posts.find((post) => post.id === postId)
-  );
+  const post = useSelector((state) => selectPostById(state, postId));
 
   if (!post) {
     return (
