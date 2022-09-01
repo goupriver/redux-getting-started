@@ -10,6 +10,8 @@ export const EditPostForm = () => {
 
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -17,18 +19,24 @@ export const EditPostForm = () => {
   const onTitleChanged = (e) => setTitle(e.target.value);
   const onContentChanged = (e) => setContent(e.target.value);
 
-  const onSavePostClicked = () => {
-    if (title && content) {
-      dispatch(
-        postUpdated({
-          id: postId,
-          title,
-          content,
-        })
-      );
+  const onSavePostClicked = async () => {
+    if (title && content && status === "idle") {
+      try {
+        setStatus("loading");
+        await dispatch(
+          postUpdated({
+            id: postId,
+            title,
+            content,
+          })
+        );
+        navigate(`/posts/${postId}`);
+      } catch (err) {
+        setStatus("failed");
+        setError(err);
+        console.log(error);
+      }
     }
-
-    navigate(`/posts/${postId}`);
   };
 
   return (
