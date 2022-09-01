@@ -37,7 +37,7 @@ export const AddPostForm = () => {
           addNewPost({
             title,
             content,
-            userId,
+            user: userId
           })
         ).unwrap();
 
